@@ -1,8 +1,8 @@
 package handlers
 
 import (
+	"fmt"
 	"github.com/Yandex-Practicum/go1fl-sprint6-final/internal/service"
-	"html/template"
 	"io"
 	"log"
 	"net/http"
@@ -33,15 +33,15 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Парсим форму
-	err := r.ParseMultipartForm(10 << 20) // 10 MB limit
+	// Парсим форму с увеличенным лимитом размера файла
+	err := r.ParseMultipartForm(32 << 20) // 32 MB
 	if err != nil {
 		log.Printf("Error parsing form: %v", err)
 		http.Error(w, "Unable to parse form", http.StatusInternalServerError)
 		return
 	}
 
-	// Получаем файл из формы
+	// Получаем файл из формы - используем правильное имя поля
 	file, header, err := r.FormFile("file")
 	if err != nil {
 		log.Printf("Error getting file from form: %v", err)
@@ -58,8 +58,14 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	content := string(fileContent)
+	if content == "" {
+		http.Error(w, "File is empty", http.StatusBadRequest)
+		return
+	}
+
 	// Конвертируем содержимое
-	converted, err := service.AutoDetectAndConvert(string(fileContent))
+	converted, err := service.AutoDetectAndConvert(content)
 	if err != nil {
 		log.Printf("Error converting content: %v", err)
 		http.Error(w, "Unable to convert content", http.StatusInternalServerError)
@@ -91,29 +97,9 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
 
-	tmpl := template.Must(template.New("result").Parse(`
-		<h2>Конвертация завершена!</h2>
-		<p><strong>Исходный файл:</strong> {{.OriginalName}}</p>
-		<p><strong>Результат сохранен в:</strong> {{.OutputName}}</p>
-		<h3>Результат:</h3>
-		<pre>{{.Content}}</pre>
-		<a href="/">Назад</a>
-	`))
+	// Простой текстовый ответ вместо HTML
+	response := fmt.Sprintf("Конвертация завершена!\nИсходный файл: %s\nРезультат сохранен в: %s\n\nРезультат:\n%s",
+		header.Filename, outputFilename, converted)
 
-	data := struct {
-		OriginalName string
-		OutputName   string
-		Content      string
-	}{
-		OriginalName: header.Filename,
-		OutputName:   outputFilename,
-		Content:      converted,
-	}
-
-	err = tmpl.Execute(w, data)
-	if err != nil {
-		log.Printf("Error executing template: %v", err)
-		http.Error(w, "Unable to display result", http.StatusInternalServerError)
-		return
-	}
+	w.Write([]byte(response))
 }
