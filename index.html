@@ -1,19 +1,60 @@
 <!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
-    <title>Document</title>
-  </head>
-  <body>
-    <form
-      enctype="multipart/form-data"
-      action="http://localhost:8080/upload"
-      method="post"
-    >
-      <input type="file" name="myFile" />
-      <input type="submit" value="upload" />
-    </form>
-  </body>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Конвертер азбуки Морзе</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 600px;
+      margin: 50px auto;
+      padding: 20px;
+    }
+    .container {
+      border: 1px solid #ddd;
+      padding: 20px;
+      border-radius: 5px;
+    }
+    .form-group {
+      margin-bottom: 15px;
+    }
+    input[type="file"] {
+      margin: 10px 0;
+    }
+    button {
+      background-color: #007bff;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>Конвертер азбуки Морзе</h1>
+  <p>Загрузите файл с текстом или кодом Морзе для автоматической конвертации</p>
+
+  <form action="/upload" method="post" enctype="multipart/form-data">
+    <div class="form-group">
+      <label for="file">Выберите файл:</label>
+      <input type="file" id="file" name="file" required>
+    </div>
+    <button type="submit">Конвертировать</button>
+  </form>
+
+  <div style="margin-top: 30px;">
+    <h3>Тестовые файлы:</h3>
+    <ul>
+      <li><strong>test</strong> - содержит код Морзе</li>
+      <li><strong>test12</strong> - содержит обычный текст</li>
+    </ul>
+  </div>
+</div>
+</body>
 </html>
