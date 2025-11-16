@@ -6,31 +6,41 @@ import (
 	"github.com/Yandex-Practicum/go1fl-sprint6-final/pkg/morse"
 )
 
-func detectMorseEncoding(inputData string) bool {
-	cleanData := strings.TrimSpace(inputData)
-	if cleanData == "" {
+func isMorse(s string) bool {
+	clean := strings.TrimSpace(s)
+	if clean == "" {
 		return false
 	}
 
-	for _, char := range cleanData {
-		if char != '.' && char != '-' && char != ' ' && char != '\n' && char != '\t' && char != '\r' {
-			return false
+	morseCount := 0
+	totalCount := 0
+
+	for _, char := range clean {
+		if char != ' ' && char != '\n' && char != '\t' && char != '\r' {
+			totalCount++
+			if char == '.' || char == '-' {
+				morseCount++
+			}
 		}
 	}
-	return true
+
+	if totalCount == 0 {
+		return false
+	}
+
+	return float64(morseCount)/float64(totalCount) >= 0.9
 }
 
-func ConvertContent(inputContent string) string {
-	trimmedContent := strings.TrimSpace(inputContent)
-	if trimmedContent == "" {
+func ToggleMorse(s string) string {
+	trimmed := strings.TrimSpace(s)
+	if trimmed == "" {
 		return ""
 	}
 
-	if detectMorseEncoding(trimmedContent) {
-		decodedText := morse.ToText(trimmedContent)
-		return strings.TrimSpace(decodedText)
-	} else {
-		encodedMorse := morse.ToMorse(trimmedContent)
-		return strings.TrimSpace(encodedMorse)
+	if isMorse(trimmed) {
+		result := morse.ToText(trimmed)
+		return strings.TrimSpace(result)
 	}
+	result := morse.ToMorse(trimmed)
+	return strings.TrimSpace(result)
 }

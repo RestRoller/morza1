@@ -8,54 +8,45 @@ import (
 	"github.com/Yandex-Practicum/go1fl-sprint6-final/internal/handlers"
 )
 
-type ApplicationServer struct {
-	Log      *log.Logger
-	HTTPServ *http.Server
+type Server struct {
+	Logger *log.Logger
+	HTTP   *http.Server
 }
 
-func InitializeApplication(logger *log.Logger) *ApplicationServer {
-	router := http.NewServeMux()
+func New(logger *log.Logger) *Server {
+	mux := http.NewServeMux()
 
-	// Main page route
-	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/" {
-			w.WriteHeader(http.StatusNotFound)
+			http.NotFound(w, r)
 			return
 		}
 		if r.Method != http.MethodGet {
-			w.WriteHeader(http.StatusMethodNotAllowed)
-			w.Write([]byte("Method not supported"))
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 			return
 		}
-		handlers.ProcessMainPage(w, r)
+		handlers.HandleIndex(w, r)
 	})
 
-	// File upload route
-	router.HandleFunc("/upload", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/upload", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
-			w.WriteHeader(http.StatusMethodNotAllowed)
-			w.Write([]byte("Method not supported"))
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 			return
 		}
-		handlers.ProcessFileSubmission(w, r)
+		handlers.HandleUpload(w, r)
 	})
 
-	httpServer := &http.Server{
+	s := &http.Server{
 		Addr:         ":8080",
-		Handler:      router,
+		Handler:      mux,
 		ErrorLog:     logger,
-		ReadTimeout:  8 * time.Second,
-		WriteTimeout: 12 * time.Second,
-		IdleTimeout:  20 * time.Second,
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 10 * time.Second,
+		IdleTimeout:  15 * time.Second,
 	}
 
-	return &ApplicationServer{
-		Log:      logger,
-		HTTPServ: httpServer,
+	return &Server{
+		Logger: logger,
+		HTTP:   s,
 	}
-}
-
-func (as *ApplicationServer) StartServer() error {
-	as.Log.Printf("Application server starting on %s", as.HTTPServ.Addr)
-	return as.HTTPServ.ListenAndServe()
 }

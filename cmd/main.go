@@ -8,12 +8,11 @@ import (
 )
 
 func main() {
-	appLogger := log.New(os.Stdout, "APP: ", log.LstdFlags|log.Lshortfile)
+	logger := log.New(os.Stdout, "server: ", log.LstdFlags|log.Lshortfile)
+	s := server.New(logger)
 
-	webServer := server.InitializeApplication(appLogger)
-
-	startErr := webServer.StartServer()
-	if startErr != nil {
-		appLogger.Fatalf("Server startup error: %v", startErr)
+	err := s.HTTP.ListenAndServe()
+	if err != nil {
+		logger.Fatalf("Server error: %v", err)
 	}
 }
