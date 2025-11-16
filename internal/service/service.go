@@ -1,7 +1,6 @@
 package service
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/Yandex-Practicum/go1fl-sprint6-final/pkg/morse"
@@ -13,16 +12,14 @@ func AutoDetectAndConvert(input string) (string, error) {
 		return "", nil
 	}
 
-	fmt.Printf("DEBUG: Input: '%s'\n", trimmed)
-	fmt.Printf("DEBUG: IsMorse: %v\n", isMorseCode(trimmed))
-
+	// Если строка состоит ТОЛЬКО из точек, тире и пробелов - это код Морзе
 	if isMorseCode(trimmed) {
+		// Конвертируем Морзе в текст (английский)
 		result := morse.ToText(trimmed)
-		fmt.Printf("DEBUG: Morse->Text: '%s'\n", result)
 		return strings.TrimSpace(result), nil
 	} else {
+		// Иначе конвертируем текст (английский) в Морзе
 		result := morse.ToMorse(trimmed)
-		fmt.Printf("DEBUG: Text->Morse: '%s'\n", result)
 		return strings.TrimSpace(result), nil
 	}
 }
@@ -33,7 +30,9 @@ func isMorseCode(input string) bool {
 		return false
 	}
 
+	// Проверяем каждый символ в строке
 	for _, char := range trimmed {
+		// Если символ НЕ точка, НЕ тире, НЕ пробел и НЕ перевод строки - это не код Морзе
 		if char != '.' && char != '-' && char != ' ' && char != '\n' && char != '\t' && char != '\r' {
 			return false
 		}
