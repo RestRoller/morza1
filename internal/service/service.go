@@ -12,36 +12,16 @@ func AutoDetectAndConvert(input string) (string, error) {
 		return "", nil
 	}
 
-	if isMorseCode(trimmed) {
-		result := morse.ToText(trimmed)
-		return strings.TrimSpace(result), nil
-	}
-
-	result := morse.ToMorse(trimmed)
-	return strings.TrimSpace(result), nil
-}
-
-func isMorseCode(input string) bool {
-	trimmed := strings.TrimSpace(input)
-	if trimmed == "" {
-		return false
-	}
-
-	morseCount := 0
-	totalCount := 0
-
+	// Простая проверка: если есть русские буквы - это текст, иначе морзе
 	for _, char := range trimmed {
-		if char != ' ' && char != '\n' && char != '\t' && char != '\r' {
-			totalCount++
-			if char == '.' || char == '-' {
-				morseCount++
-			}
+		if (char >= 'А' && char <= 'Я') || (char >= 'а' && char <= 'я') {
+			// Есть русские буквы - конвертируем в морзе
+			result := morse.ToMorse(trimmed)
+			return strings.TrimSpace(result), nil
 		}
 	}
 
-	if totalCount == 0 {
-		return false
-	}
-
-	return float64(morseCount)/float64(totalCount) >= 0.9
+	// Нет русских букв - считаем что это морзе и конвертируем в текст
+	result := morse.ToText(trimmed)
+	return strings.TrimSpace(result), nil
 }
