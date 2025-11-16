@@ -8,11 +8,11 @@ import (
 )
 
 func main() {
-	logger := log.New(os.Stdout, "server: ", log.LstdFlags|log.Lshortfile)
-	s := server.New(logger)
+	logger := log.New(os.Stdout, "morse-server: ", log.LstdFlags|log.Lshortfile)
 
-	err := s.HTTP.ListenAndServe()
-	if err != nil {
-		logger.Fatalf("Server error: %v", err)
+	srv := server.Initialize(logger)
+
+	if err := srv.Start(); err != nil {
+		logger.Fatalf("Failed to start server: %v", err)
 	}
 }

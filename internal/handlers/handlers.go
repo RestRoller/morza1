@@ -10,69 +10,73 @@ import (
 	"github.com/Yandex-Practicum/go1fl-sprint6-final/internal/service"
 )
 
-func HandleIndex(w http.ResponseWriter, r *http.Request) {
+func ServeMainPage(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
+
+	if r.URL.Path != "/" {
+		http.NotFound(w, r)
+		return
+	}
+
 	http.ServeFile(w, r, "index.html")
 }
 
-func HandleUpload(w http.ResponseWriter, r *http.Request) {
+func ProcessFileUpload(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
-	err := r.ParseMultipartForm(10 << 20)
-	if err != nil {
-		http.Error(w, "Unable to parse form", http.StatusInternalServerError)
+	if err := r.ParseMultipartForm(10 << 20); err != nil {
+		http.Error(w, "Failed to parse form", http.StatusInternalServerError)
 		return
 	}
 
 	file, header, err := r.FormFile("myFile")
 	if err != nil {
-		http.Error(w, "Unable to get file from form", http.StatusInternalServerError)
+		http.Error(w, "Failed to get uploaded file", http.StatusInternalServerError)
 		return
 	}
 	defer file.Close()
 
-	fileContent, err := io.ReadAll(file)
+	contentBytes, err := io.ReadAll(file)
 	if err != nil {
-		http.Error(w, "Unable to read file", http.StatusInternalServerError)
+		http.Error(w, "Failed to read file content", http.StatusInternalServerError)
 		return
 	}
 
-	content := string(fileContent)
+	content := string(contentBytes)
 	if content == "" {
-		http.Error(w, "File is empty", http.StatusBadRequest)
+		http.Error(w, "Uploaded file is empty", http.StatusBadRequest)
 		return
 	}
 
-	converted, err := service.AutoDetectAndConvert(content)
+	convertedContent, err := service.ConvertData(content)
 	if err != nil {
-		http.Error(w, "Unable to convert content", http.StatusInternalServerError)
+		http.Error(w, "Conversion failed", http.StatusInternalServerError)
 		return
 	}
 
-	originalExt := filepath.Ext(header.Filename)
-	timestamp := time.Now().UTC().Format("2006-01-02_15-04-05")
-	outputFilename := "converted_" + timestamp + originalExt
+	fileExt := filepath.Ext(header.Filename)
+	timestamp := time.Now().UTC().Format("20060102_150405")
+	resultFilename := "converted_" + timestamp + fileExt
 
-	outputFile, err := os.Create(outputFilename)
+	resultFile, err := os.Create(resultFilename)
 	if err != nil {
-		http.Error(w, "Unable to create output file", http.StatusInternalServerError)
+		http.Error(w, "Failed to create result file", http.StatusInternalServerError)
 		return
 	}
-	defer outputFile.Close()
+	defer resultFile.Close()
 
-	_, err = outputFile.WriteString(converted)
-	if err != nil {
-		http.Error(w, "Unable to write to output file", http.StatusInternalServerError)
+	if _, err := resultFile.WriteString(convertedContent); err != nil {
+		http.Error(w, "Failed to write result", http.StatusInternalServerError)
 		return
 	}
 
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(converted))
+	w.Write([]byte(convertedContent))
 }
