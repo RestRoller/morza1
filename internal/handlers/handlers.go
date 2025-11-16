@@ -1,99 +1,81 @@
 package handlers
 
 import (
-	"github.com/Yandex-Practicum/go1fl-sprint6-final/internal/service"
+	"bytes"
+	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"os"
-	"path/filepath"
 	"time"
+
+	"github.com/Yandex-Practicum/go1fl-sprint6-final/internal/service"
 )
 
-// IndexHandler обрабатывает запрос к корневому эндпоинту
-func IndexHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
+func ProcessMainPage(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Path != "/" {
 		http.NotFound(w, r)
 		return
 	}
-
+	if r.Method != http.MethodGet {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
 	http.ServeFile(w, r, "index.html")
 }
 
-// UploadHandler обрабатывает загрузку файлов
-func UploadHandler(w http.ResponseWriter, r *http.Request) {
+func ProcessFileSubmission(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
 
-	// Парсим форму
-	err := r.ParseMultipartForm(10 << 20) // 10 MB limit
-	if err != nil {
-		log.Printf("Error parsing form: %v", err)
-		http.Error(w, "Unable to parse form", http.StatusInternalServerError)
+	parseErr := r.ParseMultipartForm(32 << 20)
+	if parseErr != nil {
+		errorMsg := fmt.Sprintf("Form parsing error: %v", parseErr)
+		http.Error(w, errorMsg, http.StatusBadRequest)
 		return
 	}
 
-	// Получаем файл из формы
-	file, header, err := r.FormFile("file")
-	if err != nil {
-		log.Printf("Error getting file from form: %v", err)
-		http.Error(w, "Unable to get file from form", http.StatusInternalServerError)
+	uploadedFile, fileHeader, fileErr := r.FormFile("uploadedFile")
+	if fileErr != nil {
+		errorMsg := fmt.Sprintf("File access error: %v", fileErr)
+		http.Error(w, errorMsg, http.StatusBadRequest)
 		return
 	}
-	defer file.Close()
+	defer func() {
+		if closeErr := uploadedFile.Close(); closeErr != nil {
+			fmt.Printf("File close error: %v\n", closeErr)
+		}
+	}()
 
-	// Читаем содержимое файла
-	fileContent, err := io.ReadAll(file)
-	if err != nil {
-		log.Printf("Error reading file: %v", err)
-		http.Error(w, "Unable to read file", http.StatusInternalServerError)
-		return
-	}
-
-	content := string(fileContent)
-	if content == "" {
-		http.Error(w, "File is empty", http.StatusBadRequest)
+	var contentBuf bytes.Buffer
+	_, copyErr := io.Copy(&contentBuf, uploadedFile)
+	if copyErr != nil {
+		errorMsg := fmt.Sprintf("Content reading error: %v", copyErr)
+		http.Error(w, errorMsg, http.StatusInternalServerError)
 		return
 	}
 
-	// Конвертируем содержимое
-	converted, err := service.AutoDetectAndConvert(content)
-	if err != nil {
-		log.Printf("Error converting content: %v", err)
-		http.Error(w, "Unable to convert content", http.StatusInternalServerError)
+	fileData := contentBuf.String()
+	if len(fileData) == 0 {
+		http.Error(w, "Empty file content", http.StatusBadRequest)
 		return
 	}
 
-	// Создаем локальный файл для результата
-	originalExt := filepath.Ext(header.Filename)
-	timestamp := time.Now().UTC().Format("2006-01-02_15-04-05")
-	outputFilename := "converted_" + timestamp + originalExt
+	processedResult := service.ConvertContent(fileData)
 
-	outputFile, err := os.Create(outputFilename)
-	if err != nil {
-		log.Printf("Error creating output file: %v", err)
-		http.Error(w, "Unable to create output file", http.StatusInternalServerError)
-		return
-	}
-	defer outputFile.Close()
+	timestamp := time.Now().UTC().Format("20060102_150405")
+	originalFilename := fileHeader.Filename
+	outputFilename := "result_" + timestamp + "_" + originalFilename
 
-	// Записываем результат в файл
-	_, err = outputFile.WriteString(converted)
-	if err != nil {
-		log.Printf("Error writing to output file: %v", err)
-		http.Error(w, "Unable to write to output file", http.StatusInternalServerError)
+	writeErr := os.WriteFile(outputFilename, []byte(processedResult), 0600)
+	if writeErr != nil {
+		errorMsg := fmt.Sprintf("File creation error: %v", writeErr)
+		http.Error(w, errorMsg, http.StatusInternalServerError)
 		return
 	}
 
-	// Возвращаем результат клиенту
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(converted))
+	w.Write([]byte(processedResult))
 }

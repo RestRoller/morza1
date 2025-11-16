@@ -1,45 +1,61 @@
 package server
 
 import (
-	"github.com/Yandex-Practicum/go1fl-sprint6-final/internal/handlers"
 	"log"
 	"net/http"
 	"time"
+
+	"github.com/Yandex-Practicum/go1fl-sprint6-final/internal/handlers"
 )
 
-// / Server структура сервера
-type Server struct {
-	logger *log.Logger
-	server *http.Server
+type ApplicationServer struct {
+	Log      *log.Logger
+	HTTPServ *http.Server
 }
 
-// New создает новый HTTP-сервер
-func New(logger *log.Logger) *Server {
-	// Создаем роутер
+func InitializeApplication(logger *log.Logger) *ApplicationServer {
 	router := http.NewServeMux()
 
-	// Регистрируем хендлеры
-	router.HandleFunc("/", handlers.IndexHandler)
-	router.HandleFunc("/upload", handlers.UploadHandler)
+	// Main page route
+	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/" {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		if r.Method != http.MethodGet {
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			w.Write([]byte("Method not supported"))
+			return
+		}
+		handlers.ProcessMainPage(w, r)
+	})
 
-	// Создаем HTTP-сервер
+	// File upload route
+	router.HandleFunc("/upload", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			w.Write([]byte("Method not supported"))
+			return
+		}
+		handlers.ProcessFileSubmission(w, r)
+	})
+
 	httpServer := &http.Server{
 		Addr:         ":8080",
 		Handler:      router,
 		ErrorLog:     logger,
-		ReadTimeout:  5 * time.Second,
-		WriteTimeout: 10 * time.Second,
-		IdleTimeout:  15 * time.Second,
+		ReadTimeout:  8 * time.Second,
+		WriteTimeout: 12 * time.Second,
+		IdleTimeout:  20 * time.Second,
 	}
 
-	return &Server{
-		logger: logger,
-		server: httpServer,
+	return &ApplicationServer{
+		Log:      logger,
+		HTTPServ: httpServer,
 	}
 }
 
-// Start запускает сервер
-func (s *Server) Start() error {
-	s.logger.Printf("Starting server on %s", s.server.Addr)
-	return s.server.ListenAndServe()
+func (as *ApplicationServer) StartServer() error {
+	as.Log.Printf("Application server starting on %s", as.HTTPServ.Addr)
+	return as.HTTPServ.ListenAndServe()
 }

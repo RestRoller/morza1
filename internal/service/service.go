@@ -1,51 +1,36 @@
 package service
 
 import (
-	"github.com/Yandex-Practicum/go1fl-sprint6-final/pkg/morse"
 	"strings"
+
+	"github.com/Yandex-Practicum/go1fl-sprint6-final/pkg/morse"
 )
 
-// AutoDetectAndConvert автоматически определяет тип содержимого и конвертирует его
-func AutoDetectAndConvert(input string) (string, error) {
-	trimmed := strings.TrimSpace(input)
-	if trimmed == "" {
-		return "", nil
-	}
-
-	if isMorseCode(trimmed) {
-		// Если это код Морзе, конвертируем в текст
-		result := morse.ToText(trimmed)
-		return strings.TrimSpace(result), nil
-	}
-	// Если это текст, конвертируем в код Морзе
-	result := morse.ToMorse(trimmed)
-	return strings.TrimSpace(result), nil
-}
-
-// isMorseCode проверяет, является ли строка кодом Морзе
-func isMorseCode(input string) bool {
-	trimmed := strings.TrimSpace(input)
-	if trimmed == "" {
+func detectMorseEncoding(inputData string) bool {
+	cleanData := strings.TrimSpace(inputData)
+	if cleanData == "" {
 		return false
 	}
 
-	// Считаем количество символов Морзе (точки и тире)
-	morseCount := 0
-	totalCount := 0
-
-	for _, char := range trimmed {
-		if char != ' ' && char != '\n' && char != '\t' && char != '\r' {
-			totalCount++
-			if char == '.' || char == '-' {
-				morseCount++
-			}
+	for _, char := range cleanData {
+		if char != '.' && char != '-' && char != ' ' && char != '\n' && char != '\t' && char != '\r' {
+			return false
 		}
 	}
+	return true
+}
 
-	// Если более 90% символов - точки или тире, считаем что это код Морзе
-	if totalCount > 0 && float64(morseCount)/float64(totalCount) >= 0.9 {
-		return true
+func ConvertContent(inputContent string) string {
+	trimmedContent := strings.TrimSpace(inputContent)
+	if trimmedContent == "" {
+		return ""
 	}
 
-	return false
+	if detectMorseEncoding(trimmedContent) {
+		decodedText := morse.ToText(trimmedContent)
+		return strings.TrimSpace(decodedText)
+	} else {
+		encodedMorse := morse.ToMorse(trimmedContent)
+		return strings.TrimSpace(encodedMorse)
+	}
 }
