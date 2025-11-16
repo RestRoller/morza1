@@ -35,7 +35,12 @@ func HandleUpload(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Unable to get file from form", http.StatusInternalServerError)
 		return
 	}
-	defer file.Close()
+	defer func() {
+		if err := file.Close(); err != nil {
+			// Логируем ошибку закрытия файла, но не прерываем выполнение
+			http.Error(w, "File close error", http.StatusInternalServerError)
+		}
+	}()
 
 	fileContent, err := io.ReadAll(file)
 	if err != nil {
@@ -60,7 +65,12 @@ func HandleUpload(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Unable to create output file", http.StatusInternalServerError)
 		return
 	}
-	defer outputFile.Close()
+	defer func() {
+		if err := outputFile.Close(); err != nil {
+			// Логируем ошибку закрытия файла, но не прерываем выполнение
+			http.Error(w, "Output file close error", http.StatusInternalServerError)
+		}
+	}()
 
 	_, err = outputFile.WriteString(converted)
 	if err != nil {
@@ -70,5 +80,10 @@ func HandleUpload(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(converted))
+	_, err = w.Write([]byte(converted))
+	if err != nil {
+		// Обрабатываем ошибку записи в response
+		http.Error(w, "Unable to write response", http.StatusInternalServerError)
+		return
+	}
 }

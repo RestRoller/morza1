@@ -12,23 +12,13 @@ func isMorse(s string) bool {
 		return false
 	}
 
-	morseCount := 0
-	totalCount := 0
-
 	for _, char := range clean {
-		if char != ' ' && char != '\n' && char != '\t' && char != '\r' {
-			totalCount++
-			if char == '.' || char == '-' {
-				morseCount++
-			}
+		// Если нашли любой символ кроме точек, тире и пробелов - это не морзе
+		if char != '.' && char != '-' && char != ' ' && char != '\n' && char != '\t' && char != '\r' {
+			return false
 		}
 	}
-
-	if totalCount == 0 {
-		return false
-	}
-
-	return float64(morseCount)/float64(totalCount) >= 0.9
+	return true
 }
 
 func ToggleMorse(s string) string {
@@ -38,9 +28,7 @@ func ToggleMorse(s string) string {
 	}
 
 	if isMorse(trimmed) {
-		result := morse.ToText(trimmed)
-		return strings.TrimSpace(result)
+		return strings.TrimSpace(morse.ToText(trimmed))
 	}
-	result := morse.ToMorse(trimmed)
-	return strings.TrimSpace(result)
+	return strings.TrimSpace(morse.ToMorse(trimmed))
 }
