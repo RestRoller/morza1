@@ -15,6 +15,12 @@ func HandleIndex(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
+
+	if r.URL.Path != "/" {
+		http.NotFound(w, r)
+		return
+	}
+
 	http.ServeFile(w, r, "index.html")
 }
 
@@ -35,11 +41,7 @@ func HandleUpload(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Unable to get file from form", http.StatusInternalServerError)
 		return
 	}
-	defer func() {
-		if closeErr := file.Close(); closeErr != nil {
-			// Логируем, но не прерываем выполнение
-		}
-	}()
+	defer file.Close()
 
 	fileContent, err := io.ReadAll(file)
 	if err != nil {
@@ -53,7 +55,11 @@ func HandleUpload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	converted := service.ToggleMorse(content)
+	converted, err := service.AutoDetectAndConvert(content)
+	if err != nil {
+		http.Error(w, "Unable to convert content", http.StatusInternalServerError)
+		return
+	}
 
 	originalExt := filepath.Ext(header.Filename)
 	timestamp := time.Now().UTC().Format("2006-01-02_15-04-05")
@@ -64,11 +70,7 @@ func HandleUpload(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Unable to create output file", http.StatusInternalServerError)
 		return
 	}
-	defer func() {
-		if closeErr := outputFile.Close(); closeErr != nil {
-			// Логируем, но не прерываем выполнение
-		}
-	}()
+	defer outputFile.Close()
 
 	_, err = outputFile.WriteString(converted)
 	if err != nil {
@@ -78,9 +80,5 @@ func HandleUpload(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
-	_, err = w.Write([]byte(converted))
-	if err != nil {
-		// Игнорируем ошибку записи в response, так как клиент мог разорвать соединение
-		return
-	}
+	w.Write([]byte(converted))
 }

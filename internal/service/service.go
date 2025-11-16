@@ -6,29 +6,42 @@ import (
 	"github.com/Yandex-Practicum/go1fl-sprint6-final/pkg/morse"
 )
 
-func isMorse(s string) bool {
-	clean := strings.TrimSpace(s)
-	if clean == "" {
+func AutoDetectAndConvert(input string) (string, error) {
+	trimmed := strings.TrimSpace(input)
+	if trimmed == "" {
+		return "", nil
+	}
+
+	if isMorseCode(trimmed) {
+		result := morse.ToText(trimmed)
+		return strings.TrimSpace(result), nil
+	}
+
+	result := morse.ToMorse(trimmed)
+	return strings.TrimSpace(result), nil
+}
+
+func isMorseCode(input string) bool {
+	trimmed := strings.TrimSpace(input)
+	if trimmed == "" {
 		return false
 	}
 
-	for _, char := range clean {
-		// Если нашли любой символ кроме точек, тире и пробелов - это не морзе
-		if char != '.' && char != '-' && char != ' ' && char != '\n' && char != '\t' && char != '\r' {
-			return false
+	morseCount := 0
+	totalCount := 0
+
+	for _, char := range trimmed {
+		if char != ' ' && char != '\n' && char != '\t' && char != '\r' {
+			totalCount++
+			if char == '.' || char == '-' {
+				morseCount++
+			}
 		}
 	}
-	return true
-}
 
-func ToggleMorse(s string) string {
-	trimmed := strings.TrimSpace(s)
-	if trimmed == "" {
-		return ""
+	if totalCount == 0 {
+		return false
 	}
 
-	if isMorse(trimmed) {
-		return strings.TrimSpace(morse.ToText(trimmed))
-	}
-	return strings.TrimSpace(morse.ToMorse(trimmed))
+	return float64(morseCount)/float64(totalCount) >= 0.9
 }

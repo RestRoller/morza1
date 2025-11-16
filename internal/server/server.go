@@ -16,25 +16,8 @@ type Server struct {
 func New(logger *log.Logger) *Server {
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/" {
-			http.NotFound(w, r)
-			return
-		}
-		if r.Method != http.MethodGet {
-			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-			return
-		}
-		handlers.HandleIndex(w, r)
-	})
-
-	mux.HandleFunc("/upload", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPost {
-			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-			return
-		}
-		handlers.HandleUpload(w, r)
-	})
+	mux.HandleFunc("/", handlers.HandleIndex)
+	mux.HandleFunc("/upload", handlers.HandleUpload)
 
 	s := &http.Server{
 		Addr:         ":8080",
