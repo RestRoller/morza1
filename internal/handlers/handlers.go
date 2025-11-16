@@ -15,12 +15,6 @@ func HandleIndex(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
-
-	if r.URL.Path != "/" {
-		http.NotFound(w, r)
-		return
-	}
-
 	http.ServeFile(w, r, "index.html")
 }
 
