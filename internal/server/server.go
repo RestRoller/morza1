@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-// Server структура сервера
+// / Server структура сервера
 type Server struct {
 	logger *log.Logger
 	server *http.Server

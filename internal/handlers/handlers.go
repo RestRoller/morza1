@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"fmt"
 	"github.com/Yandex-Practicum/go1fl-sprint6-final/internal/service"
 	"io"
 	"log"
@@ -33,15 +32,15 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Парсим форму с увеличенным лимитом размера файла
-	err := r.ParseMultipartForm(32 << 20) // 32 MB
+	// Парсим форму
+	err := r.ParseMultipartForm(10 << 20) // 10 MB limit
 	if err != nil {
 		log.Printf("Error parsing form: %v", err)
 		http.Error(w, "Unable to parse form", http.StatusInternalServerError)
 		return
 	}
 
-	// Получаем файл из формы - используем правильное имя поля
+	// Получаем файл из формы
 	file, header, err := r.FormFile("file")
 	if err != nil {
 		log.Printf("Error getting file from form: %v", err)
@@ -96,10 +95,5 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 	// Возвращаем результат клиенту
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
-
-	// Простой текстовый ответ вместо HTML
-	response := fmt.Sprintf("Конвертация завершена!\nИсходный файл: %s\nРезультат сохранен в: %s\n\nРезультат:\n%s",
-		header.Filename, outputFilename, converted)
-
-	w.Write([]byte(response))
+	w.Write([]byte(converted))
 }

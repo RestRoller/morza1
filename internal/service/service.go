@@ -1,7 +1,6 @@
 package service
 
 import (
-	"fmt"
 	"github.com/Yandex-Practicum/go1fl-sprint6-final/pkg/morse"
 	"strings"
 )
@@ -10,7 +9,7 @@ import (
 func AutoDetectAndConvert(input string) (string, error) {
 	trimmed := strings.TrimSpace(input)
 	if trimmed == "" {
-		return "", fmt.Errorf("empty input")
+		return "", nil
 	}
 
 	if isMorseCode(trimmed) {
@@ -30,71 +29,22 @@ func isMorseCode(input string) bool {
 		return false
 	}
 
-	// Разбиваем на строки
-	lines := strings.Split(trimmed, "\n")
-	morseLines := 0
-	totalLines := 0
+	// Считаем количество символов Морзе (точки и тире)
+	morseCount := 0
+	totalCount := 0
 
-	for _, line := range lines {
-		line = strings.TrimSpace(line)
-		if line == "" {
-			continue
-		}
-		totalLines++
-
-		// Разбиваем строку на слова
-		words := strings.Fields(line)
-		if len(words) == 0 {
-			continue
-		}
-
-		isMorseLine := true
-		for _, word := range words {
-			// Каждое слово должно состоять только из точек и тире
-			for _, char := range word {
-				if char != '.' && char != '-' {
-					isMorseLine = false
-					break
-				}
+	for _, char := range trimmed {
+		if char != ' ' && char != '\n' && char != '\t' && char != '\r' {
+			totalCount++
+			if char == '.' || char == '-' {
+				morseCount++
 			}
-			if !isMorseLine {
-				break
-			}
-		}
-
-		if isMorseLine {
-			morseLines++
 		}
 	}
 
-	// Если больше половины строк являются кодом Морзе, считаем что это код Морзе
-	if totalLines > 0 && morseLines*2 >= totalLines {
+	// Если более 90% символов - точки или тире, считаем что это код Морзе
+	if totalCount > 0 && float64(morseCount)/float64(totalCount) >= 0.9 {
 		return true
-	}
-
-	// Дополнительная проверка для коротких текстов
-	if totalLines == 1 {
-		line := strings.TrimSpace(lines[0])
-		words := strings.Fields(line)
-		morseWords := 0
-
-		for _, word := range words {
-			isMorseWord := true
-			for _, char := range word {
-				if char != '.' && char != '-' {
-					isMorseWord = false
-					break
-				}
-			}
-			if isMorseWord {
-				morseWords++
-			}
-		}
-
-		// Если все слова состоят из точек и тире - это код Морзе
-		if len(words) > 0 && morseWords == len(words) {
-			return true
-		}
 	}
 
 	return false
