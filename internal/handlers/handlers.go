@@ -36,9 +36,8 @@ func HandleUpload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer func() {
-		if err := file.Close(); err != nil {
-			// Логируем ошибку закрытия файла, но не прерываем выполнение
-			http.Error(w, "File close error", http.StatusInternalServerError)
+		if closeErr := file.Close(); closeErr != nil {
+			// Логируем, но не прерываем выполнение
 		}
 	}()
 
@@ -66,9 +65,8 @@ func HandleUpload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer func() {
-		if err := outputFile.Close(); err != nil {
-			// Логируем ошибку закрытия файла, но не прерываем выполнение
-			http.Error(w, "Output file close error", http.StatusInternalServerError)
+		if closeErr := outputFile.Close(); closeErr != nil {
+			// Логируем, но не прерываем выполнение
 		}
 	}()
 
@@ -82,8 +80,7 @@ func HandleUpload(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	_, err = w.Write([]byte(converted))
 	if err != nil {
-		// Обрабатываем ошибку записи в response
-		http.Error(w, "Unable to write response", http.StatusInternalServerError)
+		// Игнорируем ошибку записи в response, так как клиент мог разорвать соединение
 		return
 	}
 }
